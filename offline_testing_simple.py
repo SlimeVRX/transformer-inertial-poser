@@ -59,6 +59,43 @@ parser.add_argument('--viz_terrain', action='store_true',
 #                     help='')                # for the DIP-IMU set which has C info
 args = parser.parse_args()
 
+# python offline_testing_simple.py
+# --name_contains "dipimu_s_09 dipimu_s_10"
+# --ours_path_name_kin output/model-new-v1-0.pt
+# --with_acc_sum
+# --test_len 30000
+# --compare_gt
+# --seed 42
+# --five_sbp
+
+args.name_contains = "dipimu_s_09_01_a"
+# args.name_contains = "dipimu_s_09 dipimu_s_10"
+# args.ours_path_name_kin = "output/model-new-v1-0.pt"
+# args.ours_path_name_kin = "output/model-with-dip9and10.pt"
+args.ours_path_name_kin = "output/model-without-dip9and10.pt"
+
+args.with_acc_sum = True
+args.test_len = 30000
+args.compare_gt = True
+args.seed = 42
+args.five_sbp = True
+args.render = True
+
+# imu_readings_dirs_OUR_format = [
+#     "syn_AMASS_CMU_v0", "syn_Eyes_Japan_Dataset_v0",
+#     "syn_KIT_v0", "syn_HUMAN4D_v0",
+#     "syn_ACCAD_v0", "syn_DFaust_67_v0", "syn_HumanEva_v0", "syn_MPI_Limits_v0",
+#     "syn_MPI_mosh_v0", "syn_SFU_v0", "syn_Transitions_mocap_v0",
+#     "preprocessed_DIP_IMU_v0", "preprocessed_TotalCapture_v0", "syn_TotalCapture_v0",
+#     "syn_DanceDB_v0"
+# ]
+
+imu_readings_dirs_OUR_format = [
+    "syn_HumanEva_v1",
+    "preprocessed_DIP_IMU_v1",
+]
+
+
 set_seed(args.seed)
 
 TEST_LEN = args.test_len
@@ -100,59 +137,59 @@ def run_ours_wrapper_with_c_rt(imu, s_gt, model_name, char) -> (np.ndarray, np.n
 
     m = load_model(model_name)
 
-    # ours_out, c_out, viz_locs_out = test_run_ours_gpt_v4_with_c_rt(char, s_gt, imu, m, 40)
-    ours_out, c_out, viz_locs_out = test_run_ours_gpt_v4_with_c_rt_minimal(char, s_gt, imu, m, 40)
+    ours_out, c_out, viz_locs_out = test_run_ours_gpt_v4_with_c_rt(char, s_gt, imu, m, 40)
+    # ours_out, c_out, viz_locs_out = test_run_ours_gpt_v4_with_c_rt_minimal(char, s_gt, imu, m, 40)
 
     return ours_out, c_out, viz_locs_out
 
 
-def test_run_ours_gpt_v4_with_c_rt_minimal(
-        char: SimAgent,
-        s_gt: np.array,
-        imu: np.array,
-        m: nn.Module,
-        max_win_len: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-
-    # use real time runner with offline data
-    rt_runner = RTRunnerMin(
-        char, m, max_win_len, s_gt[0],
-        with_acc_sum=WITH_ACC_SUM,
-    )
-
-    m_len = imu.shape[0]
-    s_traj_pred = np.zeros((m_len, cst.n_dofs * 2))
-    s_traj_pred[0] = s_gt[0]
-
-    c_traj_pred = np.zeros((m_len, rt_runner.n_sbps * 4))
-    viz_locs_seq = [np.ones((rt_runner.n_sbps, 3)) * 100.0]
-
-    for t in range(0, m_len-1):
-        res = rt_runner.step(imu[t, :], s_traj_pred[t, :3])
-
-        s_traj_pred[t + 1, :] = res['qdq']
-        c_traj_pred[t + 1, :] = res['ct']
-
-        viz_locs = res['viz_locs']
-        for sbp_i in range(viz_locs.shape[0]):
-            viz_point(viz_locs[sbp_i, :], sbp_i)
-        viz_locs_seq.append(viz_locs)
-
-        if RENDER:
-            time.sleep(1. / 180)
-
-    # throw away first "trim" predictions (our algorithm gives dummy values)... append dummy value in the end.
-    viz_locs_seq = np.array(viz_locs_seq)
-    assert len(viz_locs_seq) == len(s_traj_pred)
-
-    # +2 because post-processing moving average filter effectively introduce a bit more delay
-    trim = rt_runner.IMU_n_smooth + 2
-    s_traj_pred[0:-trim, :] = s_traj_pred[trim:, :]
-    s_traj_pred[-trim:, :] = s_traj_pred[-trim-1, :]
-    viz_locs_seq[0:-trim, :, :] = viz_locs_seq[trim:, :, :]
-    viz_locs_seq[-trim:, :, :] = viz_locs_seq[-trim-1, :, :]
-
-    return s_traj_pred, c_traj_pred, viz_locs_seq
+# def test_run_ours_gpt_v4_with_c_rt_minimal(
+#         char: SimAgent,
+#         s_gt: np.array,
+#         imu: np.array,
+#         m: nn.Module,
+#         max_win_len: int
+# ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+#
+#     # use real time runner with offline data
+#     rt_runner = RTRunnerMin(
+#         char, m, max_win_len, s_gt[0],
+#         with_acc_sum=WITH_ACC_SUM,
+#     )
+#
+#     m_len = imu.shape[0]
+#     s_traj_pred = np.zeros((m_len, cst.n_dofs * 2))
+#     s_traj_pred[0] = s_gt[0]
+#
+#     c_traj_pred = np.zeros((m_len, rt_runner.n_sbps * 4))
+#     viz_locs_seq = [np.ones((rt_runner.n_sbps, 3)) * 100.0]
+#
+#     for t in range(0, m_len-1):
+#         res = rt_runner.step(imu[t, :], s_traj_pred[t, :3])
+#
+#         s_traj_pred[t + 1, :] = res['qdq']
+#         c_traj_pred[t + 1, :] = res['ct']
+#
+#         viz_locs = res['viz_locs']
+#         for sbp_i in range(viz_locs.shape[0]):
+#             viz_point(viz_locs[sbp_i, :], sbp_i)
+#         viz_locs_seq.append(viz_locs)
+#
+#         if RENDER:
+#             time.sleep(1. / 180)
+#
+#     # throw away first "trim" predictions (our algorithm gives dummy values)... append dummy value in the end.
+#     viz_locs_seq = np.array(viz_locs_seq)
+#     assert len(viz_locs_seq) == len(s_traj_pred)
+#
+#     # +2 because post-processing moving average filter effectively introduce a bit more delay
+#     trim = rt_runner.IMU_n_smooth + 2
+#     s_traj_pred[0:-trim, :] = s_traj_pred[trim:, :]
+#     s_traj_pred[-trim:, :] = s_traj_pred[-trim-1, :]
+#     viz_locs_seq[0:-trim, :, :] = viz_locs_seq[trim:, :, :]
+#     viz_locs_seq[-trim:, :, :] = viz_locs_seq[-trim-1, :, :]
+#
+#     return s_traj_pred, c_traj_pred, viz_locs_seq
 
 
 def test_run_ours_gpt_v4_with_c_rt(
@@ -304,14 +341,7 @@ def get_all_testing_filenames(name_contains_list):
     main
 """
 
-imu_readings_dirs_OUR_format = [
-    "syn_AMASS_CMU_v0", "syn_Eyes_Japan_Dataset_v0",
-    "syn_KIT_v0", "syn_HUMAN4D_v0",
-    "syn_ACCAD_v0", "syn_DFaust_67_v0", "syn_HumanEva_v0", "syn_MPI_Limits_v0",
-    "syn_MPI_mosh_v0", "syn_SFU_v0", "syn_Transitions_mocap_v0",
-    "preprocessed_DIP_IMU_v0", "preprocessed_TotalCapture_v0", "syn_TotalCapture_v0",
-    "syn_DanceDB_v0"
-]
+
 
 # if args.save_c:
 #     try:

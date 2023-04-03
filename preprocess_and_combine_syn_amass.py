@@ -42,7 +42,7 @@ def store_imu_s_info(imu_gt_dirs,
 
         files = []
         for f in sorted(os.listdir(imu_gt_dir)):
-            f_full = imu_gt_dir + "/" + f
+            f_full = imu_gt_dir + "\\" + f
             if f_full.endswith(".pkl") and os.path.isfile(f_full):
                 if len(name_contains_l) > 0:
                     for name_contains in name_contains_l:
@@ -141,7 +141,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess and merge all syn and real training data')
     parser.add_argument('--data_version_tag', type=str, default="v1", help='')
     args = parser.parse_args()
+
+    args.data_version_tag = "v1"
+
     TAG = args.data_version_tag
+
+    #python preprocess_and_combine_syn_amass.py --data_version_tag v1
 
     name_contains_l = []  # default, train on everything
     names_all = ""
@@ -155,18 +160,24 @@ if __name__ == "__main__":
     #
     # print(names_all)
 
-    dataset_names = ["data/syn_AMASS_CMU_v0", "data/syn_Eyes_Japan_Dataset_v0",
-                     "data/syn_KIT_v0", "data/syn_HUMAN4D_v0",
-                     "data/syn_ACCAD_v0", "data/syn_DFaust_67_v0", "data/syn_HumanEva_v0", "data/syn_MPI_Limits_v0",
-                     "data/syn_MPI_mosh_v0", "data/syn_SFU_v0", "data/syn_Transitions_mocap_v0",
-                     "data/syn_TotalCapture_v0", "data/preprocessed_DIP_IMU_v0_with_aug_c_train"]
+    # dataset_names = ["data/syn_AMASS_CMU_v0", "data/syn_Eyes_Japan_Dataset_v0",
+    #                  "data/syn_KIT_v0", "data/syn_HUMAN4D_v0",
+    #                  "data/syn_ACCAD_v0", "data/syn_DFaust_67_v0", "data/syn_HumanEva_v0", "data/syn_MPI_Limits_v0",
+    #                  "data/syn_MPI_mosh_v0", "data/syn_SFU_v0", "data/syn_Transitions_mocap_v0",
+    #                  "data/syn_TotalCapture_v0", "data/preprocessed_DIP_IMU_v0_with_aug_c_train"]
 
-    for dataset_name in dataset_names:
-        dataset_name.replace("v0", TAG)
+    dataset_names = [
+        "data/syn_HumanEva_v1",
+        "data/preprocessed_DIP_IMU_v1_with_aug_c_train",
+    ]
+
+    # for dataset_name in dataset_names:
+    #     dataset_name.replace("v0", TAG)
 
     # downweight larger datasets in AMASS a bit -- probably unimportant
     # note that only syn_TotalCapture is used in training, not the real preprocessed_TotalCapture
-    dataset_down_sample_rates = [100, 100, 250, 100, 60, 60, 60, 60, 60, 60, 60, 60, 60]
+    # dataset_down_sample_rates = [100, 100, 250, 100, 60, 60, 60, 60, 60, 60, 60, 60, 60]
+    dataset_down_sample_rates = [60, 60]
 
     store_imu_s_info(
         imu_gt_dirs=dataset_names,
@@ -176,5 +187,3 @@ if __name__ == "__main__":
         info_save_name='data/info_train_' + TAG + names_all,
         num_sbps=5,
     )
-
-

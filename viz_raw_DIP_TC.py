@@ -28,8 +28,11 @@ rot_up_R = cst.rot_up_R
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(suppress=True)
 
-motion_name_imu = 'data/TotalCapture_60FPS_Original/s1_freestyle3.pkl'
-motion_name_gt = 'data/TotalCapture/s1/freestyle3_poses.npz'
+# motion_name_imu = 'data/TotalCapture_60FPS_Original/s1_freestyle3.pkl'
+# motion_name_gt = 'data/TotalCapture/s1/freestyle3_poses.npz'
+
+motion_name_gt = motion_name_imu = 'data/source/DIP_IMU/s_01/03.pkl'
+
 # motion_name_gt = motion_name_imu = 'data/DIP_IMU/s_01/03.pkl'
 # motion_name_gt = motion_name_imu = 'data/DIP_IMU/s_10/05.pkl'
 

@@ -9,7 +9,7 @@ import re
 import sys
 from typing import List, Dict
 import random
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed
 
 import numpy as np
 import pybullet as pb
@@ -235,7 +235,7 @@ def gen_data_job_single_core(src_dir_name, save_dir, file_name, name_contains):
         motion_name = os.path.join(src_dir_name, file_name)
 
         ext = ".pkl"
-        save_name_local = src_dir_name.rsplit('/', 1)[-1] + "_" + file_name[:-10] + ext
+        save_name_local = src_dir_name.rsplit('\\', 1)[-1] + "_" + file_name[:-10] + ext
         save_name = save_dir + "/" + save_name_local
         save_name = save_name.replace(" ", "_")
 
@@ -302,11 +302,13 @@ def gen_data_all(save_dir, src_dir, name_contains):
             # results = Parallel(n_jobs=2)(delayed(countdown)(10 ** 7) for _ in range(20))
             # with parallel_backend("loky", inner_max_num_threads=2):
 
-            results = Parallel(n_jobs=args.n_proc)(
-                delayed(gen_data_job_single_core)(
-                    d, save_dir, entry.name, name_contains
-                ) for entry in it
-            )
+            # results = Parallel(n_jobs=args.n_proc)(
+            #     delayed(gen_data_job_single_core)(
+            #         d, save_dir, entry.name, name_contains
+            #     ) for entry in it
+            # )
+            results = [gen_data_job_single_core(d, save_dir, entry.name, name_contains) for entry in it]
+
             count += np.sum(results)
 
     print("count ", count)
@@ -327,6 +329,8 @@ parser.add_argument('--n_proc', type=int, default=7,
                     help='')
 args = parser.parse_args()
 
+#python data-gen-and-viz-bullet-new.py --save_dir ./data/syn_HumanEva_v1 --src_dir ./data/source/HumanEva --n_proc 7
+
 ''' Load Character Info Moudle '''
 spec = importlib.util.spec_from_file_location(
     "char_info", "amass_char_info.py")
@@ -336,4 +340,9 @@ spec.loader.exec_module(char_info)
 v_up = char_info.v_up_env
 assert np.allclose(np.linalg.norm(v_up), 1.0)
 
+args.save_dir = "./data/syn_HumanEva_v2"
+args.src_dir = "./data/source/HumanEva"
+args.n_proc = 1
+
+# print(args.save_dir, args.src_dir, args.name_contains)
 gen_data_all(args.save_dir, args.src_dir, args.name_contains)

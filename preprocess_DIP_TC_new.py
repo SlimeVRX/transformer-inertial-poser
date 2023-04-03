@@ -9,6 +9,7 @@ from typing import Tuple
 import os
 import numpy as np
 import pickle
+import pickle5
 import pybullet as pb
 import pybullet_data
 import torch
@@ -31,9 +32,19 @@ parser.add_argument('--data_version_tag', type=str, default="v1",
                     help='')
 args = parser.parse_args()
 
+#python preprocess_DIP_TC_new.py --is_dip --data_version_tag v1
+
 DIP_FORMAT = False      # if True, preprocess into DIP and TransPose data format, not used in this repo.
+
+args.is_dip = True
+args.data_version_tag = "v1"
+
 DIP_DATASET = args.is_dip
 TAG = args.data_version_tag
+
+print(args.is_dip, args.data_version_tag)
+
+
 
 def load_motion_dip(motion_file, _char_info):
     m = dip_loader.load(motion=None,
@@ -231,9 +242,9 @@ def gen_data_all_dip(char, src_dir, save_dir):
                     motion_name = os.path.join(d, entry.name)
 
                     save_ext = ".pt" if DIP_FORMAT else ".pkl"
-                    save_name_local = "dipimu_" + d.rsplit('/', 1)[-1] \
+                    save_name_local = "dipimu_" + d.rsplit("\\", 1)[-1] \
                                       + "_" + entry.name[:-4] + save_ext
-                    save_name = save_dir + "/" + save_name_local
+                    save_name = save_dir + "\\" + save_name_local
                     save_name = save_name.replace(" ", "_")
 
                     load_and_store(char, motion_name, motion_name, save_name)
@@ -260,12 +271,12 @@ def gen_data_all_tc(char, src_gt_dir, src_imu_dir, save_dir):
                 if entry.name.endswith('.npz'):
                     motion_name_gt = os.path.join(d, entry.name)
 
-                    motion_name_imu_local = d.rsplit('/', 1)[-1] + "_" + entry.name[:-10]
+                    motion_name_imu_local = d.rsplit("\\", 1)[-1] + "_" + entry.name[:-10]
                     motion_name_imu = os.path.join(src_imu_dir, motion_name_imu_local + ".pkl")
 
                     save_ext = ".pt" if DIP_FORMAT else ".pkl"
                     save_name_local = "tcimu_" + motion_name_imu_local + save_ext
-                    save_name = save_dir + "/" + save_name_local
+                    save_name = save_dir + "\\" + save_name_local
                     save_name = save_name.replace(" ", "_")
 
                     load_and_store(char, motion_name_gt, motion_name_imu, save_name)
@@ -301,7 +312,7 @@ def augment_dip_motion_with_syn_SBP(preprocessed_motion_dir, sbp_dir, motion_w_s
                     imu = motion['imu']
                     qdq = motion['nimble_qdq']
                 with open(sbp_name, "rb") as handle:
-                    sbp = pickle.load(handle)
+                    sbp = pickle5.load(handle)
                     c = sbp['constrs']
                 with open(motion_w_sbp_name, "wb") as handle:
                     pickle.dump(
@@ -332,7 +343,7 @@ def copy_train_split(all_dir):
                 continue
             if entry.name.startswith('dipimu_s_10') or entry.name.startswith('dipimu_s_09'):
                 continue
-            shutil.copyfile(all_dir + "/" + entry.name, save_dir_train + "/" + entry.name)
+            shutil.copyfile(all_dir + "\\" + entry.name, save_dir_train + "\\" + entry.name)
             count += 1
 
     print("train count ", count)
@@ -344,7 +355,8 @@ pb_client = bullet_client.BulletClient(
 pb_client.setAdditionalSearchPath(pybullet_data.getDataPath())
 pb_client.resetSimulation()
 
-''' Load Character Info Moudle '''
+
+
 spec = importlib.util.spec_from_file_location(
     "char_info", "amass_char_info.py")
 char_info = importlib.util.module_from_spec(spec)
@@ -393,3 +405,4 @@ else:
     else:
         gen_data_all_tc(robot, "data/source/TotalCapture",
                         "data/source/TotalCapture_60FPS_Original/", "data/preprocessed_TotalCapture_" + TAG)
+
